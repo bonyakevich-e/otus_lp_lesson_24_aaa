@@ -28,5 +28,26 @@ root@pam:~# sudo useradd otusadm && sudo useradd otus
 ```
 5. Создаём пользователям пароли:
 ```
-echo "Otus2022!" | sudo passwd --stdin otusadm && echo "Otus2022!" | sudo passwd --stdin otus
+root@pam:~# passwd otusadm
+root@pam:~# passwd otus
 ```
+6. Создаём группу admin:
+```
+root@pam:~# groupadd -f admin
+```
+7. Добавляем пользователей vagrant,root и otusadm в группу admin:
+```
+root@pam:~# usermod otusadm -a -G admin && usermod root -a -G admin && usermod vagrant -a -G admin
+```
+> [!NOTE]
+> Здесь если не указать -a, то дополнительные группы, в которых состоит пользователь, и которые не указаны после опции -G буду удалены
+> Не путать с параметром -g, который меняет основную группу для пользователя, в том числе права на каталог home пользователя. Параметр -G добавляет/удаляет
+> только дополнительные группы, основную не трогает
+8. После создания пользователей, нужно проверить, что они могут подключаться по SSH к нашей ВМ. Для этого пытаемся подключиться с хостовой машины:
+```
+$ ssh otus@192.168.57.10
+```
+Если не удаётся войти и возращает сообщение "otus@192.168.57.10: Permission denied (publickey)." нужно проверить что настройки sshd. В боксе "ubuntu/jammy64" vim /etc/ssh/sshd_config.d/60-cloudimg-settings.conf указано "PasswordAuthentication no", нужно изменить
+
+9. Далее настроим правило, по которому все пользователи кроме тех, что указаны в группе admin не смогут подключаться в выходные дни.
+
