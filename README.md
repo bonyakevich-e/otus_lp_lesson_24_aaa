@@ -6,48 +6,50 @@
 #### Описание домашнего задания
 1. Запретить всем пользователям кроме группы admin логин в выходные (суббота и воскресенье), без учета праздников
 
-2*. дать конкретному пользователю права работать с докером и возможность перезапускать докер сервис
+2*. Дать конкретному пользователю права работать с докером и возможность перезапускать докер сервис
 
 #### Инструкция по выполнению
 
 1. Запускаем виртуальную машину:
-```
+```console
 $ vagrant up
 ```
 2.  Подключаемся к нашей созданной ВМ:
-```
+```console
 $ vagrant ssh
 ```
 3. Переходим в root-пользователя:
-```
+```console
 vagrant@pam:~$ sudo -i
 ```
 4. Создаём пользователя otusadm и otus:
-```
+```console
 root@pam:~# sudo useradd otusadm && sudo useradd otus
 ```
 5. Создаём пользователям пароли:
-```
+```console
 root@pam:~# passwd otusadm
 root@pam:~# passwd otus
 ```
 6. Создаём группу admin:
-```
+```console
 root@pam:~# groupadd -f admin
 ```
 7. Добавляем пользователей vagrant,root и otusadm в группу admin:
-```
+```console
 root@pam:~# usermod otusadm -a -G admin && usermod root -a -G admin && usermod vagrant -a -G admin
 ```
 > [!NOTE]
-> Здесь если не указать -a, то дополнительные группы, в которых состоит пользователь, и которые не указаны после опции -G буду удалены
+> Если не указать -a, то дополнительные группы, в которых состоит пользователь, и которые не указаны после опции -G буду удалены
 > Не путать с параметром -g, который меняет основную группу для пользователя, в том числе права на каталог home пользователя. Параметр -G добавляет/удаляет
 > только дополнительные группы, основную не трогает
 8. После создания пользователей, нужно проверить, что они могут подключаться по SSH к нашей ВМ. Для этого пытаемся подключиться с хостовой машины:
-```
+```console
 $ ssh otus@192.168.57.10
 ```
-Если не удаётся войти и возращает сообщение "otus@192.168.57.10: Permission denied (publickey)." нужно проверить что настройки sshd. В боксе "ubuntu/jammy64" vim /etc/ssh/sshd_config.d/60-cloudimg-settings.conf указано "PasswordAuthentication no", нужно изменить
+> [!NOTE]
+> Если не удаётся войти и возращает сообщение "otus@192.168.57.10: Permission denied (publickey)." нужно проверить настройки sshd. В боксе "ubuntu/jammy64"
+> файле /etc/ssh/sshd_config.d/60-cloudimg-settings.conf указано "PasswordAuthentication no", нужно изменить на yes
 
 9. Далее настроим правило, по которому все пользователи кроме тех, что указаны в группе admin не смогут подключаться в выходные дни.
 
@@ -55,7 +57,7 @@ $ ssh otus@192.168.57.10
 
 Создадим файл-скрипт /usr/local/bin/login.sh
 
-```
+```shell
 #!/bin/bash
 #Первое условие: если день недели суббота или воскресенье
 if [ $(date +%a) = "Sat" ] || [ $(date +%a) = "Sun" ]; then
@@ -73,11 +75,11 @@ if [ $(date +%a) = "Sat" ] || [ $(date +%a) = "Sun" ]; then
 fi
 ```
 10.  Добавим права на исполнение файла:
-```
-chmod +x /usr/local/bin/login.sh
+```console
+root@pam:~# chmod +x /usr/local/bin/login.sh
 ```
 11. Укажем в файле /etc/pam.d/sshd модуль pam_exec и наш скрипт:
-```
+```shell
 # PAM configuration for the Secure Shell service
 
 # Standard Un*x authentication.
@@ -89,7 +91,7 @@ auth required pam_exec.so debug /usr/local/bin/login.sh
 ...
 ```
 12. Проверяем. Для этого устанавливаем дату на выходной день:
-```
+```console
 # отключаем NTP
 root@pam:~# timedatectl set-ntp no
 # устанавливаем дату на прошлое Воскресенье
